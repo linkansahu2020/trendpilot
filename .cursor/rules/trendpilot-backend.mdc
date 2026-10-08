@@ -1,0 +1,89 @@
+---
+description: Architecture and boundaries for the TrendPilot.Backend Instagram API
+alwaysApply: false
+---
+# TrendPilot.Backend
+
+`TrendPilot.Backend` is an ASP.NET Core app on .NET 10. A Business or Creator Instagram account signs in through official Instagram Business Login, and the app reads that account.
+
+## Keep this file current
+
+Edit this file in the same change when any of these happen:
+
+- A route is added, removed, or its response shape changes.
+- A type moves, or a new project or folder takes over one of the three roles.
+- Session storage changes, including replacing the single in-memory login.
+- The redirect URI, Graph version, host, port, or where the app id and secret are read changes.
+- Instagram request or response shape changes, including token parsing.
+
+Replace the old fact. Do not append a changelog. Do not write the app id, app secret, or access token into this file.
+
+## Architecture
+
+Three roles live in one process.
+
+- HTTP edge: `Program.cs`. Maps routes, checks the session, and chooses status codes. It does not know Instagram URL shapes.
+- Instagram adapter: `InstagramClient` in `InstagramClient.cs`. Builds the authorize URL, exchanges the code, and loads profile and media. It returns `InstagramResult<T>` (a value, or a status plus an error). Routes turn that into the HTTP response.
+- Memory: `InstagramSessionStore` in `InstagramClient.cs`. One process-wide login (`userId`, token, expiry) and short-lived `state` values used once. A restart clears both. There is no database.
+
+```mermaid
+sequenceDiagram
+    participant Browser
+    participant Routes as Program.cs
+    participant Store as InstagramSessionStore
+    participant Client as InstagramClient
+    participant Instagram
+    Browser->>Routes: GET /instagram/login
+    Routes->>Store: CreateState
+    Routes->>Client: BuildAuthorizeUrl
+    Routes->>Browser: redirect
+    Instagram->>Routes: GET /instagram/callback
+    Routes->>Store: TryConsumeState
+    Routes->>Client: ExchangeCodeAsync
+    Client->>Instagram: short-lived token then 60-day token
+    Routes->>Store: Set login
+    Browser->>Routes: GET /instagram/me
+    Routes->>Store: GetValid
+    Routes->>Client: GetAccountAsync
+    Client->>Instagram: profile and one page of media
+    Routes->>Browser: InstagramAccount
+```
+
+The browser receives `InstagramProfile`, `InstagramMedia`, and `InstagramAccount`. Instagram field names stay inside `InstagramClient`.
+
+## Boundaries
+
+- New HTTP behavior goes in `Program.cs`. New Instagram URLs, fields, and token parsing stay in `InstagramClient`.
+- Do not put the access token in a response, a log, or `appsettings.json`.
+- Keep official Instagram Business Login. Do not add scraping or a route that takes an arbitrary page id.
+- Short-lived token JSON may be a `data` array or a flat object with `access_token` and numeric `user_id`.
+- The session is one in-memory login. A feature that needs many users must replace `InstagramSessionStore` on purpose, not by adding a second global token.
+
+## Files
+
+- `TrendPilot.Backend.csproj` sets assembly name `TrendPilot.Backend` and root namespace `TrendPilot.Backend`.
+- `Program.cs` maps the routes.
+- `InstagramClient.cs` holds the client, session store, and response types.
+- `appsettings.json` holds `Instagram:GraphVersion` (`v25.0`) and `Instagram:RedirectUri` (`https://localhost:7061/instagram/callback`).
+- `Properties/launchSettings.json` is local launch only. It sets the listen addresses and the `Instagram__AppId` and `Instagram__AppSecret` environment variables.
+
+## Routes
+
+- `GET /` returns `Hello World!`.
+- `GET /instagram/login` stores a one-time `state` and redirects to Instagram with scope `instagram_business_basic`.
+- `GET /instagram/callback` checks `state`, exchanges the code, stores the login, and returns `{ signedIn, userId }`.
+- `GET /instagram/me` returns the signed-in profile and one page of media. With no session it returns 401.
+
+## Configuration
+
+The app id and secret come from `Instagram__AppId` and `Instagram__AppSecret`. Locally those are set in the launch profile. In production the host environment sets them. The Meta OAuth redirect URI must match `https://localhost:7061/instagram/callback` exactly for local login.
+
+## Run
+
+From the `trendpilot` folder:
+
+```bash
+dotnet run --launch-profile http
+```
+
+The process listens on `https://localhost:7061` and `http://localhost:5056`.

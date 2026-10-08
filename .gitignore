@@ -1,0 +1,8 @@
+bin/
+obj/
+.vs/
+*.user
+.DS_Store
+
+# Local launch profile holds Instagram__AppId and Instagram__AppSecret.
+Properties/launchSettings.json
