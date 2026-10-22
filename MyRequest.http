@@ -1,9 +1,0 @@
-GET http://localhost:5056/
-
-###
-
-# Open https://localhost:7061/instagram/login in a browser to sign in.
-# In the Meta app, the OAuth redirect URI must be exactly https://localhost:7061/instagram/callback
-# The app id and secret come from Instagram__AppId and Instagram__AppSecret.
-
-GET http://localhost:5056/instagram/me

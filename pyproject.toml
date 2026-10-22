@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[project]
+name = "trendpilot-backend"
+version = "0.1.0"
+description = "TrendPilot backend API for Instagram Business Login"
+requires-python = ">=3.9"
+dependencies = [
+  "fastapi",
+  "httpx",
+  "uvicorn",
+]

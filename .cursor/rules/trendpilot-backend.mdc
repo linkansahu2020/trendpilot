@@ -1,10 +1,11 @@
 ---
 description: Architecture and boundaries for the TrendPilot.Backend Instagram API
-alwaysApply: false
+alwaysApply: true
 ---
+
 # TrendPilot.Backend
 
-`TrendPilot.Backend` is an ASP.NET Core app on .NET 10. A Business or Creator Instagram account signs in through official Instagram Business Login, and the app reads that account.
+`TrendPilot.Backend` is a FastAPI app. A Business or Creator Instagram account signs in through official Instagram Business Login, and the app reads that account.
 
 ## Keep this file current
 
@@ -22,50 +23,50 @@ Replace the old fact. Do not append a changelog. Do not write the app id, app se
 
 Three roles live in one process.
 
-- HTTP edge: `Program.cs`. Maps routes, checks the session, and chooses status codes. It does not know Instagram URL shapes.
-- Instagram adapter: `InstagramClient` in `InstagramClient.cs`. Builds the authorize URL, exchanges the code, and loads profile and media. It returns `InstagramResult<T>` (a value, or a status plus an error). Routes turn that into the HTTP response.
-- Memory: `InstagramSessionStore` in `InstagramClient.cs`. One process-wide login (`userId`, token, expiry) and short-lived `state` values used once. A restart clears both. There is no database.
+- HTTP edge: `app/main.py`. Maps routes, checks the session, and chooses status codes. It does not know Instagram URL shapes.
+- Instagram adapter: `app/instagram.py`. Builds the authorize URL, exchanges the code, and loads profile and media. It returns a value or `InstagramFailure`. Routes turn that into the HTTP response.
+- Memory: `InstagramSessionStore` in `app/session.py`. One process-wide login (`user_id`, token, expiry) and short-lived `state` values used once. A restart clears both. There is no database.
 
 ```mermaid
 sequenceDiagram
     participant Browser
-    participant Routes as Program.cs
+    participant Routes as app/main.py
     participant Store as InstagramSessionStore
-    participant Client as InstagramClient
+    participant Client as app/instagram.py
     participant Instagram
     Browser->>Routes: GET /instagram/login
-    Routes->>Store: CreateState
-    Routes->>Client: BuildAuthorizeUrl
+    Routes->>Store: create_state
+    Routes->>Client: build_authorize_url
     Routes->>Browser: redirect
     Instagram->>Routes: GET /instagram/callback
-    Routes->>Store: TryConsumeState
-    Routes->>Client: ExchangeCodeAsync
+    Routes->>Store: try_consume_state
+    Routes->>Client: exchange_code
     Client->>Instagram: short-lived token then 60-day token
-    Routes->>Store: Set login
+    Routes->>Store: set_login
     Browser->>Routes: GET /instagram/me
-    Routes->>Store: GetValid
-    Routes->>Client: GetAccountAsync
+    Routes->>Store: get_valid
+    Routes->>Client: get_account
     Client->>Instagram: profile and one page of media
     Routes->>Browser: InstagramAccount
 ```
 
-The browser receives `InstagramProfile`, `InstagramMedia`, and `InstagramAccount`. Instagram field names stay inside `InstagramClient`.
+The browser receives profile, media, and `nextCursor`. Instagram field names stay inside `app/instagram.py`.
 
 ## Boundaries
 
-- New HTTP behavior goes in `Program.cs`. New Instagram URLs, fields, and token parsing stay in `InstagramClient`.
-- Do not put the access token in a response, a log, or `appsettings.json`.
+- New HTTP behavior goes in `app/main.py`. New Instagram URLs, fields, and token parsing stay in `app/instagram.py`.
+- Do not put the access token in a response, a log, or a committed config file.
 - Keep official Instagram Business Login. Do not add scraping or a route that takes an arbitrary page id.
 - Short-lived token JSON may be a `data` array or a flat object with `access_token` and numeric `user_id`.
 - The session is one in-memory login. A feature that needs many users must replace `InstagramSessionStore` on purpose, not by adding a second global token.
 
 ## Files
 
-- `TrendPilot.Backend.csproj` sets assembly name `TrendPilot.Backend` and root namespace `TrendPilot.Backend`.
-- `Program.cs` maps the routes.
-- `InstagramClient.cs` holds the client, session store, and response types.
-- `appsettings.json` holds `Instagram:GraphVersion` (`v25.0`) and `Instagram:RedirectUri` (`https://localhost:7061/instagram/callback`).
-- `Properties/launchSettings.json` is local launch only. It sets the listen addresses and the `Instagram__AppId` and `Instagram__AppSecret` environment variables.
+- `pyproject.toml` declares the FastAPI, Uvicorn, and HTTPX dependencies.
+- `app/main.py` maps the routes.
+- `app/instagram.py` holds the Instagram client.
+- `app/session.py` holds the session store.
+- `certs/` holds the local HTTPS certificate and is not committed.
 
 ## Routes
 
@@ -76,14 +77,14 @@ The browser receives `InstagramProfile`, `InstagramMedia`, and `InstagramAccount
 
 ## Configuration
 
-The app id and secret come from `Instagram__AppId` and `Instagram__AppSecret`. Locally those are set in the launch profile. In production the host environment sets them. The Meta OAuth redirect URI must match `https://localhost:7061/instagram/callback` exactly for local login.
+The app id and secret come from `Instagram__AppId` and `Instagram__AppSecret`. The redirect URI defaults to `https://localhost:7061/instagram/callback` and the Graph version defaults to `v25.0`. Override them with `Instagram__RedirectUri` and `Instagram__GraphVersion`. The Meta OAuth redirect URI must match the callback exactly for local login.
 
 ## Run
 
-From the `trendpilot` folder:
+From the `trendpilot` folder, with a virtualenv that has the dependencies installed:
 
 ```bash
-dotnet run --launch-profile http
+uvicorn app.main:app --host localhost --port 7061 --ssl-certfile certs/localhost.crt --ssl-keyfile certs/localhost.key
 ```
 
-The process listens on `https://localhost:7061` and `http://localhost:5056`.
+The process listens on `https://localhost:7061`.

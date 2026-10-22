@@ -1,8 +1,9 @@
-bin/
-obj/
-.vs/
-*.user
-.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
 
-# Local launch profile holds Instagram__AppId and Instagram__AppSecret.
-Properties/launchSettings.json
+# Local HTTPS certificate for https://localhost:7061
+certs/
+
+# Local app id and secret. Copy .env.example to .env.
+.env
