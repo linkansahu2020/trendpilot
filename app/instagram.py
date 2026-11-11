@@ -5,12 +5,12 @@ import os
 import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from typing import Any
 from urllib.parse import quote, urlencode
 
 import httpx
 
+from app.env import load_env_file
 from app.session import InstagramLogin
 
 PROFILE_FIELDS = "id,username,name,biography,website,followers_count,follows_count,media_count,profile_picture_url"
@@ -34,40 +34,8 @@ class InstagramFailure:
     message: str
 
 
-def _repo_root() -> Path:
-    here = Path(__file__).resolve()
-    for parent in here.parents:
-        if (parent / "pyproject.toml").is_file():
-            return parent
-    return here.parents[1]
-
-
-def _load_env_file() -> None:
-    path = _repo_root() / ".env"
-    try:
-        text = path.read_text(encoding="utf-8")
-    except FileNotFoundError:
-        return
-    for raw_line in text.splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#"):
-            continue
-        if line.startswith("export "):
-            line = line[len("export ") :].strip()
-        key, separator, value = line.partition("=")
-        if not separator:
-            continue
-        key = key.strip()
-        if not key or key in os.environ:
-            continue
-        value = value.strip()
-        if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
-            value = value[1:-1]
-        os.environ[key] = value
-
-
 def load_settings() -> InstagramSettings:
-    _load_env_file()
+    load_env_file()
     return InstagramSettings(
         app_id=os.environ.get("Instagram__AppId", "").strip(),
         app_secret=os.environ.get("Instagram__AppSecret", "").strip(),

@@ -1,21 +1,22 @@
 ---
-description: Architecture and boundaries for the TrendPilot.Backend Instagram API
+description: Architecture and boundaries for the TrendPilot.Backend Instagram and video clipping API
 alwaysApply: true
 ---
 
 # TrendPilot.Backend
 
-`TrendPilot.Backend` is a FastAPI app. A Business or Creator Instagram account signs in through official Instagram Business Login, and the app reads that account.
+`TrendPilot.Backend` is a FastAPI app. A Business or Creator Instagram account signs in through official Instagram Business Login, and the app reads that account. It also turns an uploaded video or a YouTube link into short vertical clips for social media.
 
 ## Keep this file current
 
 Edit this file in the same change when any of these happen:
 
-- A route is added, removed, or its response shape changes.
+- A route is added, removed, or its response shape changes. Update its docs model and decorator text in `app/api_docs.py` and `app/main.py` in the same change.
 - A type moves, or a new project or folder takes over one of the three roles.
 - Session storage changes, including replacing the single in-memory login.
 - The redirect URI, Graph version, host, port, or where the app id and secret are read changes.
 - Instagram request or response shape changes, including token parsing.
+- A clipping step, the clip job store, the Gemini request shape, or a `Gemini__`, `Whisper__`, or `Clips__` setting changes.
 
 Replace the old fact. Do not append a changelog. Do not write the app id, app secret, or access token into this file.
 
@@ -52,6 +53,40 @@ sequenceDiagram
 
 The browser receives profile, media, and `nextCursor`. Instagram field names stay inside `app/instagram.py`.
 
+## Video clipping
+
+`app/clipping/` holds the clipping pipeline. Each step returns a value or a failure (`ClipFailure` from `tools.py`, `GeminiFailure` from `gemini.py`), and `pipeline.py` writes the failure message into the job.
+
+- `settings.py` reads `ClipSettings` and finds `ffmpeg`, `ffprobe`, and `yt-dlp`.
+- `jobs.py` holds `ClipJobStore`: an in-memory dict of jobs, each with a status, progress, error, clips, and a working folder `Clips__WorkDir/<jobId>`. Listeners receive a copy of the job whenever its status or clip list changes. A restart forgets jobs, but their folders stay on disk.
+- `source.py` saves an upload in chunks with a size limit, or downloads a YouTube link with `yt-dlp` (with the yt-dlp folder put first on `PATH` so it finds Homebrew's `deno`), then checks the duration with `ffprobe`.
+- `transcribe.py` extracts 16 kHz mono audio and runs local `faster-whisper` with word timestamps. Each model loads once per process.
+- `gemini.py` encodes a 360p, 1 fps proxy, uploads it with the Gemini Files API, waits for `ACTIVE`, calls `generate_content` with a JSON `response_schema` (retrying a 503 "overloaded" after 15, 30, and 60 seconds), and deletes the upload afterward.
+- `select.py` owns the prompt and the `ClipCandidates` schema. It snaps each clip to transcript segment boundaries, keeps 10 to 60 seconds, drops overlapping clips in score order, and keeps at most 8.
+- `render.py` writes an ASS caption file (up to 3 words per line, the spoken word highlighted), then crops to 9:16, scales to 1080x1920, burns in the captions, and encodes H.264/AAC. ffmpeg runs inside the job folder so the subtitle path needs no escaping.
+- `pipeline.py` runs one job at a time behind a lock. The status goes through `queued`, `downloading`, `transcribing`, `selecting`, `rendering`, and then `done` or `failed`. Afterward every file except `clip-*.mp4` is deleted.
+
+```mermaid
+sequenceDiagram
+    participant Browser
+    participant Routes as app/main.py
+    participant Jobs as ClipJobStore
+    participant Pipeline as app/clipping/pipeline.py
+    participant Gemini
+    Browser->>Routes: POST /clips/jobs
+    Routes->>Jobs: create
+    Routes->>Browser: 202 jobId
+    Routes->>Pipeline: run_job in background
+    Pipeline->>Pipeline: source, duration, faster-whisper
+    Pipeline->>Gemini: proxy video and transcript
+    Gemini->>Pipeline: clip candidates JSON
+    Pipeline->>Pipeline: snap, dedupe, render with ffmpeg
+    Browser->>Routes: GET /clips/jobs/jobId/events
+    Routes-->>Browser: job snapshots until done or failed
+    Browser->>Routes: GET /clips/jobs/jobId
+    Browser->>Routes: GET /clips/jobs/jobId/clips/n
+```
+
 ## Boundaries
 
 - New HTTP behavior goes in `app/main.py`. New Instagram URLs, fields, and token parsing stay in `app/instagram.py`.
@@ -59,14 +94,20 @@ The browser receives profile, media, and `nextCursor`. Instagram field names sta
 - Keep official Instagram Business Login. Do not add scraping or a route that takes an arbitrary page id.
 - Short-lived token JSON may be a `data` array or a flat object with `access_token` and numeric `user_id`.
 - The session is one in-memory login. A feature that needs many users must replace `InstagramSessionStore` on purpose, not by adding a second global token.
+- Gemini SDK calls stay in `app/clipping/gemini.py`, and ffmpeg command lines stay in the clipping step that owns them. Do not put the Gemini API key in a response, a log, or a committed config file.
+- YouTube downloading is against YouTube's terms of service. Keep it behind `Clips__AllowUrls`, accept only YouTube hosts, and never take arbitrary URLs.
 
 ## Files
 
-- `pyproject.toml` declares the FastAPI, Uvicorn, and HTTPX dependencies.
-- `app/main.py` maps the routes.
+- `pyproject.toml` declares the FastAPI, Uvicorn, HTTPX, python-multipart, google-genai, and faster-whisper dependencies. yt-dlp is not a Python dependency; see Configuration.
+- `app/main.py` maps the routes and their OpenAPI tags, summaries, descriptions, and documented responses.
+- `app/api_docs.py` holds the API docs text, the section tags, docs-only Pydantic response models, the hand-written `POST /clips/jobs` request body, and the `/docs` Swagger UI page. FastAPI's built-in `/docs` is turned off so the page can load a plugin. When the body type is switched to JSON, the plugin refills the editor with that media type's `example`, because Swagger UI otherwise shows the leftover multipart form state. Routes return `JSONResponse`, except `GET /clips/jobs/{jobId}/events`, which streams the `read_clip_job` shape. These models only describe the shapes and must match `read_profile`, `read_media`, and `read_clip_job`.
+- `app/env.py` loads `.env` and finds the repo root.
 - `app/instagram.py` holds the Instagram client.
 - `app/session.py` holds the session store.
+- `app/clipping/` holds the clipping pipeline described above.
 - `certs/` holds the local HTTPS certificate and is not committed.
+- `data/` holds job folders and rendered clips and is not committed.
 
 ## Routes
 
@@ -74,10 +115,28 @@ The browser receives profile, media, and `nextCursor`. Instagram field names sta
 - `GET /instagram/login` stores a one-time `state` and redirects to Instagram with scope `instagram_business_basic`.
 - `GET /instagram/callback` checks `state`, exchanges the code, stores the login, and returns `{ signedIn, userId }`.
 - `GET /instagram/me` returns the signed-in profile and one page of media. With no session it returns 401.
+- `POST /clips/jobs` takes JSON `{ url }` with a YouTube link, or multipart with a `file` field (`.mp4`, `.mov`, `.m4v`, `.mkv`, `.webm`). It returns 202 `{ jobId }`. It returns 400 for a bad URL or file, 403 when URLs are turned off, 413 for an upload that is too large, 415 for any other content type, and 500 when Gemini or ffmpeg is not configured, or when a URL is sent and yt-dlp is not found.
+- `GET /clips/jobs/{jobId}` returns `{ jobId, status, progress, error, clips: [{ index, start, end, duration, hook, title, caption, hashtags, score, url }] }`, or 404.
+- `GET /clips/jobs/{jobId}/events` holds a `text/event-stream` of that same job JSON and ends at `done` or `failed`. A comment line is sent every 15 seconds while the job is still running. An unknown id returns 404.
+- `GET /clips/jobs/{jobId}/clips/{index}` returns the clip as `video/mp4`, or 404.
+- `DELETE /clips/jobs/{jobId}` forgets the job, deletes its folder, and returns 204, or 404.
 
 ## Configuration
 
-The app id and secret come from `Instagram__AppId` and `Instagram__AppSecret`. The redirect URI defaults to `https://localhost:7061/instagram/callback` and the Graph version defaults to `v25.0`. Override them with `Instagram__RedirectUri` and `Instagram__GraphVersion`. The Meta OAuth redirect URI must match the callback exactly for local login.
+The app id and secret come from `Instagram__AppId` and `Instagram__AppSecret`. The redirect URI defaults to `https://localhost:7061/instagram/callback` and the Graph version defaults to `v26.0`. Override them with `Instagram__RedirectUri` and `Instagram__GraphVersion`. The Meta OAuth redirect URI must match the callback exactly for local login.
+
+Clipping reads these settings:
+
+- `Gemini__ApiKey` is a key from Google AI Studio and is required.
+- `Gemini__Model` defaults to `gemini-3.8-flash`. Google retired `gemini-2.5-flash` for new API users; when a model is retired, Gemini returns 404 with the suggested replacement and the job error shows it.
+- `Whisper__Model` defaults to `small`. The first transcription downloads it from Hugging Face.
+- `Clips__WorkDir` defaults to `data/clips`, relative to the repo root.
+- `Clips__MaxDurationMinutes` defaults to 60.
+- `Clips__MaxUploadMb` defaults to 2048.
+- `Clips__AllowUrls` defaults to `true`.
+- `Clips__FfmpegDir` points to a folder with an `ffmpeg` and `ffprobe` built with libass. Homebrew's plain `ffmpeg` has no libass, so use `/opt/homebrew/opt/ffmpeg-full/bin`. When it is empty, the app looks on `PATH`.
+
+YouTube links need a standalone yt-dlp (`brew install yt-dlp`), which brings `deno` for YouTube's JavaScript challenge. The app uses `Clips__YtDlpPath`, then `yt-dlp` on `PATH`, then `/opt/homebrew/bin/yt-dlp`. Do not add yt-dlp back as a Python dependency: the virtualenv runs Python 3.9, where pip installs an old yt-dlp that YouTube blocks. Run `brew upgrade yt-dlp` when YouTube downloads start failing.
 
 ## Run
 
@@ -87,4 +146,4 @@ From the `trendpilot` folder, with a virtualenv that has the dependencies instal
 uvicorn app.main:app --host localhost --port 7061 --ssl-certfile certs/localhost.crt --ssl-keyfile certs/localhost.key
 ```
 
-The process listens on `https://localhost:7061`.
+The process listens on `https://localhost:7061`. The interactive API list is at `https://localhost:7061/docs`, a read-only view is at `/redoc`, and the raw spec is at `/openapi.json`.

@@ -8,10 +8,13 @@ include = ["app*"]
 [project]
 name = "trendpilot-backend"
 version = "0.1.0"
-description = "TrendPilot backend API for Instagram Business Login"
+description = "TrendPilot backend API for Instagram Business Login and video clipping"
 requires-python = ">=3.9"
 dependencies = [
   "fastapi",
+  "faster-whisper",
+  "google-genai",
   "httpx",
+  "python-multipart",
   "uvicorn",
 ]
