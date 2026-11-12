@@ -5,6 +5,7 @@ from pathlib import Path
 
 
 def repo_root() -> Path:
+    """Return the backend root (the folder that holds pyproject.toml)."""
     here = Path(__file__).resolve()
     for parent in here.parents:
         if (parent / "pyproject.toml").is_file():

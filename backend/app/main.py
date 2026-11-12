@@ -23,7 +23,6 @@ from app.api_docs import (
     ClipJobBody,
     ClipJobCreated,
     InstagramAccountBody,
-    InstagramCallbackBody,
     error_responses,
     swagger_ui_html,
 )
@@ -109,9 +108,14 @@ def instagram_login():
     summary="Instagram sign-in callback",
     description=(
         "Instagram redirects the browser here after sign-in; you do not call it yourself. It checks `state`, "
-        "exchanges `code` for a short-lived token and then a 60-day token, and stores the login in memory."
+        "exchanges `code` for a short-lived token and then a 60-day token, stores the login in memory, "
+        "and redirects to the local UI at `http://localhost:5173/account`. "
+        "The Meta OAuth redirect URI stays `https://localhost:7061/instagram/callback`."
     ),
-    responses={200: {"model": InstagramCallbackBody}, **error_responses(400, 403, 500, 502)},
+    responses={
+        302: {"description": "Redirect to the local UI account page."},
+        **error_responses(400, 403, 500, 502),
+    },
 )
 async def instagram_callback(
     code: Optional[str] = Query(None, description="Authorization code from Instagram. A trailing `#_` is removed."),
@@ -142,7 +146,7 @@ async def instagram_callback(
         return JSONResponse({"error": login.message}, status_code=login.status_code)
 
     sessions.set_login(login)
-    return JSONResponse({"signedIn": True, "userId": login.user_id})
+    return RedirectResponse("http://localhost:5173/account", status_code=302)
 
 
 @app.get(

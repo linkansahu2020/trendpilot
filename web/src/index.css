@@ -1,0 +1,327 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;600&display=swap');
+
+:root {
+  color-scheme: dark;
+  --ink: #0c1412;
+  --ink-2: #14201c;
+  --panel: rgba(22, 36, 31, 0.82);
+  --line: rgba(214, 232, 214, 0.14);
+  --text: #e8f2ea;
+  --muted: #9bb3a4;
+  --accent: #d6ff4b;
+  --accent-ink: #132016;
+  --danger: #ff8f7a;
+  --glow: rgba(214, 255, 75, 0.16);
+  --radius: 18px;
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'Manrope', system-ui, sans-serif;
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  background: var(--ink);
+  color: var(--text);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background:
+    radial-gradient(ellipse 80% 50% at 10% -10%, var(--glow), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(72, 140, 110, 0.22), transparent 50%),
+    linear-gradient(165deg, #0a1210 0%, #101a17 45%, #0c1412 100%);
+  background-attachment: fixed;
+}
+
+a {
+  color: var(--accent);
+}
+
+button,
+input,
+a.button {
+  font: inherit;
+}
+
+.shell {
+  width: min(1080px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 1.25rem 0 4rem;
+}
+
+.nav {
+  display: flex;
+  gap: 1.25rem;
+  margin-bottom: 2.5rem;
+}
+
+.nav a {
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.nav a.active {
+  color: var(--text);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.brand {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 6vw, 3.6rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+}
+
+.clips__hero h1,
+.account__hero h1,
+.account h1 {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.lede {
+  margin: 0;
+  max-width: 36rem;
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+.source-form,
+.job__status,
+.account {
+  margin-top: 2rem;
+}
+
+.source-form {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  backdrop-filter: blur(10px);
+}
+
+.source-form__modes {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.source-form__modes button {
+  appearance: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+}
+
+.source-form__modes button.is-active {
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  background: var(--accent);
+}
+
+.field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.field span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.field input[type='url'],
+.field input[type='file'] {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--ink-2);
+  color: var(--text);
+  padding: 0.75rem 0.9rem;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  padding: 0.7rem 1.2rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.button--ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+
+.message {
+  margin: 0;
+}
+
+.message--error {
+  color: var(--danger);
+}
+
+.job {
+  margin-top: 2rem;
+  display: grid;
+  gap: 1.5rem;
+}
+
+.job__status {
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.job__label {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+}
+
+.job__meta {
+  margin: 0.35rem 0 1rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.job__bar {
+  height: 0.45rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.job__bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: inherit;
+  transition: width 0.35s ease;
+}
+
+.clip-list,
+.media-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.clip-card,
+.media-card {
+  display: grid;
+  grid-template-columns: minmax(140px, 220px) 1fr;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.clip-card video,
+.media-card video,
+.media-card img {
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  object-fit: cover;
+  border-radius: 12px;
+  background: #000;
+}
+
+.media-card img,
+.media-card video {
+  aspect-ratio: 1;
+}
+
+.clip-card__body h2,
+.account__media-title {
+  margin: 0 0 0.4rem;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 500;
+}
+
+.clip-card__score {
+  margin: 0 0 0.35rem;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+}
+
+.clip-card__hook,
+.clip-card__tags,
+.clip-card__meta,
+.account__bio {
+  color: var(--muted);
+}
+
+.account__avatar {
+  margin-top: 1.25rem;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+}
+
+.account__media-title {
+  margin-top: 2rem;
+}
+
+.media-card__empty {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  background: var(--ink-2);
+  color: var(--muted);
+}
+
+.media-card__body p {
+  margin-top: 0;
+}
+
+@media (max-width: 720px) {
+  .clip-card,
+  .media-card {
+    grid-template-columns: 1fr;
+  }
+
+  .clip-card video {
+    max-width: 240px;
+  }
+}

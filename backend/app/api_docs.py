@@ -8,9 +8,9 @@ from pydantic import BaseModel, ConfigDict, Field
 APP_DESCRIPTION = """
 TrendPilot reads a signed-in Instagram Business or Creator account and turns long videos into short vertical clips for social media.
 
-**Instagram:** open [/instagram/login](/instagram/login) in a new browser tab to sign in. Instagram sends you back to `/instagram/callback`, and after that `/instagram/me` works.
+**Instagram:** open [/instagram/login](/instagram/login) in a new browser tab to sign in. Instagram sends you back to `/instagram/callback`, which stores the login and redirects to the local UI at `http://localhost:5173/account`. After that `/instagram/me` works. The Meta redirect URI stays `https://localhost:7061/instagram/callback`.
 
-**Clips:** send a YouTube link or upload a video to `POST /clips/jobs`, then watch `GET /clips/jobs/{job_id}/events` until `status` is `done`. `GET /clips/jobs/{job_id}` returns the same job once. Each clip has a download `url`.
+**Clips:** send a YouTube link or upload a video to `POST /clips/jobs`, then watch `GET /clips/jobs/{job_id}/events` until `status` is `done`. `GET /clips/jobs/{job_id}` returns the same job once. Each clip has a download `url`. The local UI in `web/` proxies these paths in development.
 
 Every error response is `{ "error": "message" }`.
 """
