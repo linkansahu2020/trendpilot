@@ -1,5 +1,5 @@
-import PrimitivesPage from '@/features/showcase/PrimitivesPage'
+import LandingPage from '@/features/landing/LandingPage'
 
 export default function App() {
-  return <PrimitivesPage />
+  return <LandingPage />
 }

@@ -6,3 +6,9 @@ export { Container, type ContainerProps } from './Container'
 export { Input, type InputProps } from './Input'
 export { Text, type TextProps } from './Text'
 export { Toggle, type ToggleProps } from './Toggle'
+export {
+  LinkIcon,
+  SparkleIcon,
+  UploadIcon,
+  type IconProps,
+} from './icons'
