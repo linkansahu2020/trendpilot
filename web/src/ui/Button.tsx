@@ -29,14 +29,13 @@ function Button({
   size = 'md',
   className,
   type = 'button',
-  disabled,
   children,
   ...props
 }: ButtonProps) {
   return (
     <button
+      {...props}
       type={type}
-      disabled={disabled}
       className={cn(
         'inline-flex items-center justify-center rounded-full transition duration-150 ease-out cursor-pointer',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2',
@@ -45,7 +44,6 @@ function Button({
         sizes[size],
         className,
       )}
-      {...props}
     >
       {children}
     </button>
