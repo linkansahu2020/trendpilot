@@ -1,5 +1,5 @@
 import type { ElementType, HTMLAttributes, ReactNode } from 'react'
-import { cn } from './cn'
+import { cn } from '@/lib/cn'
 
 const variants = {
   display:
@@ -14,7 +14,8 @@ const variants = {
     'font-sans text-lg font-normal leading-7 tracking-[-0.01em] text-muted',
   'body-md': 'font-sans text-[15px] font-normal leading-6 text-muted',
   'body-sm': 'font-sans text-[13px] font-normal leading-5 text-muted',
-  label: 'font-sans text-sm font-semibold leading-5 tracking-[0.01em] text-on-surface',
+  label:
+    'font-sans text-sm font-semibold leading-5 tracking-[0.01em] text-on-surface',
   caption:
     'font-sans text-[11px] font-medium leading-[14px] tracking-[0.03em] text-muted',
 } as const
@@ -31,13 +32,13 @@ const defaultTags = {
   caption: 'span',
 } as const satisfies Record<keyof typeof variants, ElementType>
 
-export type TextProps = HTMLAttributes<HTMLElement> & {
+type TextProps = HTMLAttributes<HTMLElement> & {
   variant?: keyof typeof variants
   as?: ElementType
   children: ReactNode
 }
 
-export function Text({
+function Text({
   variant = 'body-md',
   as,
   className,
@@ -52,3 +53,5 @@ export function Text({
     </Component>
   )
 }
+
+export { Text, type TextProps }

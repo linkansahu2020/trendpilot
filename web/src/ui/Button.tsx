@@ -1,9 +1,9 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
-import { cn } from './cn'
+import { cn } from '@/lib/cn'
 
 const variants = {
   primary:
-    'bg-linear-to-r from-primary to-secondary text-on-primary shadow-[var(--shadow-cta)] hover:scale-[1.02] hover:shadow-[0_16px_32px_-4px_rgba(124,58,237,0.35)]',
+    'bg-linear-to-r from-primary to-secondary text-on-primary shadow-[var(--shadow-cta)] hover:scale-[1.02] hover:shadow-[var(--shadow-cta-hover)]',
   secondary:
     'bg-canvas text-ink border border-border hover:border-border-hover hover:bg-surface-subtle',
   ghost:
@@ -18,13 +18,13 @@ const sizes = {
   lg: 'h-12 px-6 text-base font-semibold gap-2',
 } as const
 
-export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: keyof typeof variants
   size?: keyof typeof sizes
   children: ReactNode
 }
 
-export function Button({
+function Button({
   variant = 'primary',
   size = 'md',
   className,
@@ -51,3 +51,5 @@ export function Button({
     </button>
   )
 }
+
+export { Button, type ButtonProps }
