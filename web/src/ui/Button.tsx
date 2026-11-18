@@ -1,9 +1,9 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
-import { cn } from './cn'
+import { cn } from '@/lib/cn'
 
 const variants = {
   primary:
-    'bg-linear-to-r from-primary to-secondary text-on-primary shadow-[var(--shadow-cta)] hover:scale-[1.02] hover:shadow-[0_16px_32px_-4px_rgba(124,58,237,0.35)]',
+    'bg-linear-to-r from-primary to-secondary text-on-primary shadow-[var(--shadow-cta)] hover:scale-[1.02] hover:shadow-[var(--shadow-cta-hover)]',
   secondary:
     'bg-canvas text-ink border border-border hover:border-border-hover hover:bg-surface-subtle',
   ghost:
@@ -18,25 +18,24 @@ const sizes = {
   lg: 'h-12 px-6 text-base font-semibold gap-2',
 } as const
 
-export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: keyof typeof variants
   size?: keyof typeof sizes
   children: ReactNode
 }
 
-export function Button({
+function Button({
   variant = 'primary',
   size = 'md',
   className,
   type = 'button',
-  disabled,
   children,
   ...props
 }: ButtonProps) {
   return (
     <button
+      {...props}
       type={type}
-      disabled={disabled}
       className={cn(
         'inline-flex items-center justify-center rounded-full transition duration-150 ease-out cursor-pointer',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2',
@@ -45,9 +44,10 @@ export function Button({
         sizes[size],
         className,
       )}
-      {...props}
     >
       {children}
     </button>
   )
 }
+
+export { Button, type ButtonProps }

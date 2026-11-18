@@ -1,13 +1,13 @@
 import type { HTMLAttributes, ReactNode } from 'react'
-import { cn } from './cn'
+import { cn } from '@/lib/cn'
 
-export type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
+type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
   children: ReactNode
   tone?: 'default' | 'accent'
   showDot?: boolean
 }
 
-export function Badge({
+function Badge({
   children,
   tone = 'default',
   showDot = false,
@@ -26,12 +26,11 @@ export function Badge({
       {...props}
     >
       {showDot ? (
-        <span
-          aria-hidden
-          className="size-1.5 rounded-full bg-primary"
-        />
+        <span aria-hidden className="size-1.5 rounded-full bg-primary" />
       ) : null}
       {children}
     </span>
   )
 }
+
+export { Badge, type BadgeProps }

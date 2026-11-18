@@ -1,19 +1,15 @@
 import type { ButtonHTMLAttributes } from 'react'
-import { cn } from './cn'
+import { cn } from '@/lib/cn'
 
-export type ToggleProps = Omit<
-  ButtonHTMLAttributes<HTMLButtonElement>,
-  'onChange'
-> & {
+type ToggleProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onChange'> & {
   checked?: boolean
-  onCheckedChange?: (checked: boolean) => void
+  onCheckedChange: (checked: boolean) => void
 }
 
-export function Toggle({
+function Toggle({
   checked = false,
   onCheckedChange,
   className,
-  disabled,
   ...props
 }: ToggleProps) {
   return (
@@ -21,8 +17,8 @@ export function Toggle({
       type="button"
       role="switch"
       aria-checked={checked}
-      disabled={disabled}
-      onClick={() => onCheckedChange?.(!checked)}
+      {...props}
+      onClick={() => onCheckedChange(!checked)}
       className={cn(
         'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition duration-150',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2',
@@ -30,7 +26,6 @@ export function Toggle({
         checked ? 'bg-primary' : 'bg-border',
         className,
       )}
-      {...props}
     >
       <span
         aria-hidden
@@ -42,3 +37,5 @@ export function Toggle({
     </button>
   )
 }
+
+export { Toggle, type ToggleProps }

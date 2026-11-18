@@ -1,12 +1,9 @@
 import type { InputHTMLAttributes } from 'react'
-import { cn } from './cn'
+import { cn } from '@/lib/cn'
 
-export type CheckboxProps = Omit<
-  InputHTMLAttributes<HTMLInputElement>,
-  'type'
->
+type CheckboxProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>
 
-export function Checkbox({ className, ...props }: CheckboxProps) {
+function Checkbox({ className, ...props }: CheckboxProps) {
   return (
     <input
       type="checkbox"
@@ -22,3 +19,5 @@ export function Checkbox({ className, ...props }: CheckboxProps) {
     />
   )
 }
+
+export { Checkbox, type CheckboxProps }

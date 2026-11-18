@@ -1,12 +1,12 @@
 import type { HTMLAttributes, ReactNode } from 'react'
-import { cn } from './cn'
+import { cn } from '@/lib/cn'
 
-export type CardProps = HTMLAttributes<HTMLDivElement> & {
+type CardProps = HTMLAttributes<HTMLDivElement> & {
   children: ReactNode
   elevated?: boolean
 }
 
-export function Card({
+function Card({
   children,
   elevated = false,
   className,
@@ -25,3 +25,5 @@ export function Card({
     </div>
   )
 }
+
+export { Card, type CardProps }

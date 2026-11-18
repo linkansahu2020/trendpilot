@@ -31,6 +31,7 @@
   --shadow-card: 0 10px 30px -5px rgba(2, 6, 23, 0.04),
     0 4px 6px -2px rgba(2, 6, 23, 0.02);
   --shadow-cta: 0 12px 24px -4px rgba(124, 58, 237, 0.25);
+  --shadow-cta-hover: 0 16px 32px -4px rgba(124, 58, 237, 0.35);
 
   --spacing-gutter: 1.5rem;
   --spacing-gutter-desktop: 2rem;
